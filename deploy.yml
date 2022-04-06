@@ -1,0 +1,63 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: site-a-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: site-a-app
+  namespace: site-a-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: site-a-app
+  template:
+    metadata:
+      labels:
+        app: site-a-app
+    spec:
+      containers:
+        - name: nginx-site-a
+          image: ghcr.io/vincepower/nginx-site-a:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              memory: 500Mi
+            requests:
+              memory: 250Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: site-a-svc
+  namespace: site-a-ns
+spec:
+  selector:
+    app: site-a-app
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: message-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /a
+            pathType: Prefix
+            backend:
+              service:
+                name: site-a-svc
+                port:
+                  number: 80
